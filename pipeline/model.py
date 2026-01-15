@@ -1,6 +1,7 @@
 from typing import Optional
 from xgboost import XGBClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 import numpy as np
 
 def _scale_pos_weight(y):
@@ -15,14 +16,26 @@ def train_model(X_train, y_train, preproc, seed: int = 42):
     Uses scale_pos_weight to handle class imbalance (anomaly = positive).
     TODO (Student C): tune hyperparams, early_stopping_rounds with a valid set, CV grid, threshold tuning.
     """
+    # Add a validation logic
+    X_train_split, X_val, y_train_split, y_val = train_test_split(
+        X_train, y_train, 
+        test_size=0.2
+        random_state=seed, 
+        stratify=train
+    )
+
+    # Balance classes
+
     spw = _scale_pos_weight(y_train)
+
+    # Tune XGBOOST
     clf = XGBClassifier(
         n_estimators=300,
-        max_depth=4,
-        learning_rate=0.08,
-        subsample=0.9,
-        colsample_bytree=0.9,
-        reg_lambda=1.0,
+        max_depth=6,
+        learning_rate=0.1,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        reg_lambda=1.5,
         reg_alpha=0.0,
         random_state=seed,
         n_jobs=-1,
@@ -33,5 +46,13 @@ def train_model(X_train, y_train, preproc, seed: int = 42):
         use_label_encoder=False
     )
     pipe = Pipeline([("preproc", preproc), ("model", clf)])
-    pipe.fit(X_train, y_train)
+
+    # Training with Early Stopping
+    pipe.fit(
+        X_train_split,
+        y_train_split, 
+        model__early_stopping_round=30, 
+        model__eval_set=[(X_val, y_val)], 
+        model__verbose=False
+    )
     return pipe
