@@ -3,6 +3,8 @@ from typing import Tuple
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
 
 CATEGORICAL = ["protocol_type", "service", "flag"]
 TARGET = "class"
@@ -24,10 +26,29 @@ def preprocess(df: pd.DataFrame) -> Tuple:
         X, y, test_size=0.25, random_state=42, stratify=y
     )
 
+    # Imputation : numeric pipeline dealing with missing values NaN then Scale
+    num_pipe = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler(with_mean=False)),
+        ]
+    )
+
+    
+    # Imputation : Categorical pipeline dealing with NaN then OneHotEncoder
+    # min_frequency groups rare categories automatically  (rare category)
+    cat_pipe = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="constant", fill_value="__MISSING__")),
+            ("ohe", OneHotEncoder(handle_unknown="ignore", min_frequency=20)),
+        ]
+    )
+
+
     preproc = ColumnTransformer(
         transformers=[
-            ("num", StandardScaler(with_mean=False), num_cols),       # sparse-friendly
-            ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+            ("num", num_pipe, num_cols),
+            ("cat", cat_pipe, cat_cols),
         ],
         remainder="drop",
         sparse_threshold=0.3,   # keep it sparse if many OHE cols
