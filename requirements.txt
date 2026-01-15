@@ -3,9 +3,18 @@
 pandas
 numpy
 scikit-learn
+<<<<<<< HEAD
 xgboost==1.7.6
 matplotlib
 seaborn
 plotly
 pytest
 python==3.11
+=======
+xgboost == 1.7.6
+matplotlib
+pytest
+seaborn
+plotly
+python == 3.11
+>>>>>>> feature/sky-preprocessing
